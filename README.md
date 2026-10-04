@@ -27,6 +27,22 @@ LightGBM minus Logistic Regression on test: +0.061, 95% interval +0.006 to +0.13
 - Class weighting (scale_pos_weight) hurt LightGBM badly in my experiments. I did not establish why.
 - The test set was used once. Models were tuned only on validation.
 
+## Cost-sensitive threshold results
+
+Costs are assumptions, not real bank data. A false alarm costs 5, and a missed fraud costs the value in the first column. Thresholds were chosen on validation only, then applied once to the test set.
+
+| Missed-fraud cost | LogReg test cost | LightGBM test cost | Flag nothing |
+|---|---|---|---|
+| 10 | 435 | 230 | 750 |
+| 50 | 1075 | 985 | 3750 |
+| 100 | 1745 | 1935 | 7500 |
+| 500 | 6680 | 9535 | 37500 |
+
+- Both models beat flagging nothing at every cost ratio.
+- The lower-cost model flipped between a missed-fraud cost of 50 and 100 (LightGBM lower at 10 and 50, Logistic Regression lower at 100 and 500).
+- The flip is not established. The gaps come from a handful of transactions, thresholds were picked on only 57 validation frauds, and I did not compute bootstrap intervals for these costs.
+- Logistic Regression's best threshold hit the edge of my search grid (0.99) at low costs, so the true best cutoff may be higher.
+
 ## Next
 
-Cost-sensitive threshold, SHAP explanations, MLflow tracking, FastAPI service, drift monitoring.
+SHAP explanations, MLflow tracking, FastAPI service, drift monitoring.
