@@ -63,6 +63,33 @@ SHAP values were computed for the final LightGBM on a test-set sample: all 75 fr
 - The sample is fraud-enriched, so the ranking reflects what drives fraud calls, not importance across normal traffic.
 - I looked at only two individual transactions. I have not checked whether the missed frauds share a pattern.
 
+## Prediction API (FastAPI)
+
+The final LightGBM is served with FastAPI. The cutoff (0.11) was chosen on validation using assumed costs of 100 per missed fraud and 5 per false alarm.
+
+Run it:
+
+```
+python -m src.save_model
+python -m uvicorn src.api:app --port 8000
+```
+
+- `GET /health` returns the status, the number of features and the threshold.
+- `POST /predict` takes 29 numeric fields (V1 to V28 and Amount) and returns the fraud score, a flagged true/false, the threshold and the in-server scoring time. Missing or non-numeric fields get a 422 error.
+
+Benchmark on 200 test-set transactions (10 frauds, 190 normal), sent one at a time:
+
+| Metric | Value |
+|---|---|
+| Median latency | 6.8 ms |
+| p95 latency | 8.6 ms |
+| p99 latency | 9.2 ms |
+| Max difference, API score vs direct score | 0 |
+
+- Latency was measured from the client, including the HTTP round trip, with client and server on the same laptop and one request at a time. This is not a load test.
+- The benchmark flagged 9 of 200 transactions, but it did not compare flags to labels, so that number is not a detection rate. For detection quality, use the cost-threshold section above.
+- The model file is not in Git. Run `python -m src.save_model` to create it.
+
 ## Next
 
-MLflow tracking, FastAPI service, drift monitoring.
+Docker, drift monitoring.
