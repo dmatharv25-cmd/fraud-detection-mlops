@@ -117,6 +117,25 @@ Does the drift hurt the model? The test period was split into two halves by time
 - The PR-AUC intervals overlap, and I did not test the difference directly, so I cannot call the drop a real decline. Part of it may come from the fall in fraud volume, but I did not separate that from model decay.
 - The data covers only about 48 hours. This demonstrates the monitoring method. It is not evidence of long-term drift, and some of the shift may be time-of-day effects.
 
+## Retraining trigger
+
+`python -m src.retrain_trigger` decides whether to retrain. It retrains only when both conditions fire:
+
+- Drift: more than 5 of 29 features have PSI above 0.25 against the training period.
+- Performance: the share of frauds caught at the 0.11 cutoff falls by more than 10 percentage points compared with validation.
+
+Result on this data, with the test period as the new window:
+
+| Check | Value | Fired |
+|---|---|---|
+| Drifted features | 7 of 29 | Yes |
+| Catch rate, validation vs new window | 75.4% vs 74.7% | No |
+
+- Decision: do not retrain. Drift alone is not enough, because earlier the drift alerts fired while the catch rate barely moved.
+- The limits (PSI 0.25, more than 5 features, a 10 point drop) are my choices, not standards.
+- The catch-rate comparison rests on 57 validation frauds and 75 test frauds, so a 10 point margin is a loose guard.
+- `--force` trains a candidate on all data and saves it to `models/candidate.pkl`. It never overwrites the current model. The candidate cannot be evaluated here because no unseen data is left. Promoting it would need a fresh later time window.
+
 ## Next
 
-Docker, retraining trigger.
+Docker, tests and CI.
