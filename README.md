@@ -1,5 +1,9 @@
 # Fraud Detection MLOps
 
+[![tests](https://github.com/dmatharv25-cmd/fraud-detection-mlops/actions/workflows/tests.yml/badge.svg)](https://github.com/dmatharv25-cmd/fraud-detection-mlops/actions/workflows/tests.yml)
+
+The badge means the 4 unit tests pass (time-split order, PSI, cost arithmetic). They check code logic, not model quality.
+
 Credit card fraud detection on the ULB dataset (284,807 transactions, 492 frauds, 0.17%), built with time-based splits and honest evaluation.
 
 Status: in progress (Week 1 done: baseline and LightGBM comparison).
