@@ -140,6 +140,31 @@ Result on this data, with the test period as the new window:
 - The catch-rate comparison rests on 57 validation frauds and 75 test frauds, so a 10 point margin is a loose guard.
 - `--force` trains a candidate on all data and saves it to `models/candidate.pkl`. It never overwrites the current model. The candidate cannot be evaluated here because no unseen data is left. Promoting it would need a fresh later time window.
 
+## Docker
+
+The prediction API can run in a container. The model file is not in Git, so create it first, then build and run:
+
+```
+python -m src.save_model
+docker build -t fraud-api .
+docker run --rm -p 8000:8000 fraud-api
+```
+
+The same benchmark (200 test-set transactions, one request at a time) was run against the local server and against the container:
+
+| | Local server | Docker container |
+|---|---|---|
+| Median latency | 6.8 ms | 10.2 ms |
+| p95 latency | 8.6 ms | 11.7 ms |
+| p99 latency | 9.2 ms | 13.0 ms |
+| Max score difference vs direct scoring | 0 | 2.6e-26 |
+
+- Scores match to floating-point rounding. I did not verify the cause of the tiny difference.
+- The container is about 3.5 ms slower at the median. I did not measure where the extra time goes.
+- The model is copied in from the local `models/` folder at build time, so the image only works with that exact model. A real system would load it from a registry or storage at startup.
+- The image also contains `candidate.pkl`, which the API never loads.
+- Latency is one request at a time on one laptop. This is not a load test.
+
 ## Next
 
-Docker, tests and CI.
+Load testing, a fresh-window evaluation of the retrained candidate.
