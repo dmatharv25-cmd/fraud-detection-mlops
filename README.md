@@ -30,7 +30,7 @@ Status: core work done (baseline, LightGBM, cost thresholds, SHAP, API, Docker, 
 - `requirements.txt` is a full `pip freeze` from a Windows machine. It pins every version, but it includes Windows-only packages (`pywin32`, `pywinpty`), so installing it on Linux or macOS will fail until those lines are removed. `requirements-api.txt` and `requirements-ci.txt` are smaller sets for the API container and CI.
 - I have not tested a fresh clone on another machine.
 
-## Setup
+## Data split
 
 - Train: first 60% of time (360 frauds)
 - Validation: next 20% (57 frauds), used for all tuning
@@ -87,7 +87,7 @@ SHAP values were computed for the final LightGBM on a test-set sample: all 75 fr
 - The lowest-scored fraud (score 0.000, missed) had no strong signal on the features the model relies on. Its largest contribution was only +1.2 from V14, and some features pushed the other way.
 - V1 to V28 are anonymized PCA components, so SHAP shows which components drive the model but not what they mean in real life.
 - The sample is fraud-enriched, so the ranking reflects what drives fraud calls, not importance across normal traffic.
-- I looked at only two individual transactions. I have not checked whether the missed frauds share a pattern.
+- I looked at only two individual transactions here. The Missed frauds section below compares caught and missed frauds in aggregate.
 
 ## Prediction API (FastAPI)
 
@@ -230,7 +230,7 @@ Top score bin (0.9 to 1.0):
 - The lowest bin (scores below 0.001) holds about 56,900 rows per split, with 14 frauds on validation and 18 on test. These are frauds the model scores near zero. That is a recall limit, not a calibration finding.
 - The middle bins hold only 1 to 7 rows each (for example, test scores of 0.5 to 0.9: 5 rows, 1 fraud). I cannot judge calibration there, and I did not test whether recalibration (Platt or isotonic) would help.
 - The bin edges were my choice.
-- Fraud rates here(0.10% to 0.13%) are specific to this dataset. In traffic with a different fraud rate, a score of 0.9 would not mean the same thing.
+- Fraud rates here (0.10% to 0.13%) are specific to this dataset. In traffic with a different fraud rate, a score of 0.9 would not mean the same thing.
 
 ## Missed frauds
 
