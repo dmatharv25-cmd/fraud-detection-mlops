@@ -185,6 +185,31 @@ The single test split has only 75 frauds, so I also ran a rolling evaluation (`p
 - Settings were otherwise fixed from earlier and nothing was tuned per block.
 - The data covers only about 48 hours, so block differences may also reflect time-of-day effects.
 
+## Calibration check
+
+`python -W ignore -m src.calibration` trains the final LightGBM on the training split and compares its scores with actual fraud rates on validation and test. It only measures. It changes no model and no saved file.
+
+| | Validation | Test |
+|---|---|---|
+| Frauds | 57 | 75 |
+| Brier score, model | 0.000292 | 0.000433 |
+| Brier score, constant base rate | 0.001000 | 0.001315 |
+| Log loss | 0.00335 | 0.00441 |
+
+Top score bin (0.9 to 1.0):
+
+| | Rows | Frauds | Mean score | Actual fraud rate |
+|---|---|---|---|---|
+| Validation | 40 | 39 | 0.996 | 97.5% |
+| Test | 57 | 54 | 0.994 | 94.7% |
+
+- The model's Brier score is about 3 times lower than predicting the base rate for every transaction, so the scores carry information.
+- The top bin is close to calibrated. On test it is slightly overconfident (0.994 vs 94.7%), but with 57 rows, 3 missed frauds move the rate by about 5 points.
+- The lowest bin (scores below 0.001) holds about 56,900 rows per split, with 14 frauds on validation and 18 on test. These are frauds the model scores near zero. That is a recall limit, not a calibration finding.
+- The middle bins hold only 1 to 7 rows each (for example, test scores of 0.5 to 0.9: 5 rows, 1 fraud). I cannot judge calibration there, and I did not test whether recalibration (Platt or isotonic) would help.
+- The bin edges were my choice.
+- Fraud rates here(0.10% to 0.13%) are specific to this dataset. In traffic with a different fraud rate, a score of 0.9 would not mean the same thing.
+
 ## Next
 
 Load testing, a fresh-window evaluation of the retrained candidate.
