@@ -6,7 +6,7 @@ The badge means the 4 unit tests pass (time-split order, PSI, cost arithmetic). 
 
 Credit card fraud detection on the ULB dataset (284,807 transactions, 492 frauds, 0.17%), built with time-based splits and honest evaluation.
 
-Status: in progress (Week 1 done: baseline and LightGBM comparison).
+Status: core work done (baseline, LightGBM, cost thresholds, SHAP, API, Docker, drift monitoring, rolling evaluation, calibration check, missed-fraud analysis). Load testing is not done.
 
 ## Setup
 
@@ -239,4 +239,6 @@ Features where missed and caught frauds differ most (difference in means, in uni
 
 ## Next
 
-Load testing, a fresh-window evaluation of the retrained candidate.
+- Load testing the API with concurrent requests. The current benchmark sends one request at a time.
+- A fresh-window evaluation of the retrained candidate is blocked. The data covers only about 48 hours and no unseen later period is left, so it needs new data.
+- The missed-fraud differences have no significance test, and I did not check whether the missed frauds form one group or several.
