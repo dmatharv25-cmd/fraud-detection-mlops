@@ -8,6 +8,14 @@ Credit card fraud detection on the ULB dataset (284,807 transactions, 492 frauds
 
 Status: core work done (baseline, LightGBM, cost thresholds, SHAP, API, Docker, drift monitoring, rolling evaluation, calibration check, missed-fraud analysis). Load testing is not done.
 
+## Summary
+
+- **Problem:** flag fraud among 284,807 credit card transactions (492 frauds, 0.17%) from the ULB dataset. Splits follow time order, so every model is tested on later transactions than it was trained on.
+- **Main result:** LightGBM scored 0.811 PR-AUC on the held-out test split against 0.744 for Logistic Regression. The interval for that difference barely excludes zero (+0.006 to +0.135), and in a rolling evaluation the average lead shrank to about 0.008 (LightGBM ahead in 3 of 4 blocks). I treat the two models as close.
+- **Main limit:** at the 0.11 cutoff, 33 of 132 validation and test frauds (25%) were missed. They look close to normal on V14, V12 and V17, the features the model relies on most.
+- **Also in this repo:** cost-based threshold, SHAP explanations, a FastAPI service with Docker, PSI and KS drift monitoring, a retraining trigger, and a calibration check.
+- **Scope:** the data covers only about 48 hours, so nothing here is evidence of long-term drift. Costs are assumptions, not real bank data.
+
 ## Setup
 
 - Train: first 60% of time (360 frauds)
