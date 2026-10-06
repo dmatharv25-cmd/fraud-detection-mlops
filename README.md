@@ -6,7 +6,7 @@ The badge means the 4 unit tests pass (time-split order, PSI, cost arithmetic). 
 
 Credit card fraud detection on the ULB dataset (284,807 transactions, 492 frauds, 0.17%), built with time-based splits and honest evaluation.
 
-Status: core work done (baseline, LightGBM, cost thresholds, SHAP, API, Docker, drift monitoring, rolling evaluation, calibration check, missed-fraud analysis). Load testing is not done.
+Status: core work done (baseline, LightGBM, cost thresholds, SHAP, API, Docker, drift monitoring, rolling evaluation, calibration check, missed-fraud analysis, load test).
 
 ## Summary
 
@@ -259,8 +259,25 @@ Features where missed and caught frauds differ most (difference in means, in uni
 - The cutoff (0.11) was chosen on validation, so the validation misses are not fully unseen for that choice.
 - V1 to V28 are anonymized, so I cannot say what these fraud types are in real life.
 
+## Load test
+
+`python -W ignore -m src.load_test` sends 400 requests per level to `POST /predict` from 1, 4, 16 and 32 concurrent clients. The payloads are the same 10 frauds and 190 normal test transactions as the one-at-a-time benchmark. The server was one uvicorn process, started with `python -m uvicorn src.api:app --port 8000`.
+
+| Clients | Requests/s | p50 (ms) | p95 (ms) | p99 (ms) | Errors |
+|---|---|---|---|---|---|
+| 1 | 128.3 | 7.6 | 9.2 | 10.0 | 0 |
+| 4 | 138.4 | 25.2 | 29.4 | 35.9 | 0 |
+| 16 | 157.5 | 101.0 | 110.5 | 139.9 | 0 |
+| 32 | 155.1 | 201.5 | 231.0 | 362.9 | 0 |
+
+- Throughput levels off at about 130 to 160 requests per second. Beyond 4 clients, extra clients mostly wait longer: median latency roughly doubles each time the client count doubles.
+- No request failed at any level.
+- The 1-client median (7.6 ms) is consistent with the earlier one-at-a-time benchmark (6.8 ms).
+- I did not find out why throughput levels off. The Python client shares the laptop's CPU with the server, and each request builds a pandas DataFrame, but I tested neither.
+- This is one run, one server process, one machine and a fixed request mix, not production traffic. Numbers will vary between runs, so treat them as rough. The Docker container was not load tested.
+
 ## Next
 
-- Load testing the API with concurrent requests. The current benchmark sends one request at a time.
 - A fresh-window evaluation of the retrained candidate is blocked. The data covers only about 48 hours and no unseen later period is left, so it needs new data.
 - The missed-fraud differences have no significance test, and I did not check whether the missed frauds form one group or several.
+- The load test shows throughput levelling off, but I did not find the cause or test the Docker container under load.
