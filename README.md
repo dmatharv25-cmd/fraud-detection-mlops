@@ -210,6 +210,33 @@ Top score bin (0.9 to 1.0):
 - The bin edges were my choice.
 - Fraud rates here(0.10% to 0.13%) are specific to this dataset. In traffic with a different fraud rate, a score of 0.9 would not mean the same thing.
 
+## Missed frauds
+
+`python -W ignore -m src.missed_frauds` trains the final LightGBM on the training split, pools the validation and test frauds (132 in total), and compares the frauds caught at the 0.11 cutoff with the missed ones. It only measures. It changes no model and no saved file.
+
+| | Frauds | Caught | Missed |
+|---|---|---|---|
+| Validation | 57 | 43 | 14 |
+| Test | 75 | 56 | 19 |
+| Pooled | 132 | 99 | 33 |
+
+Features where missed and caught frauds differ most (difference in means, in units of the standard deviation of normal training transactions):
+
+| Feature | Caught mean | Missed mean | Difference |
+|---|---|---|---|
+| V14 | -7.60 | -1.76 | 6.51 |
+| V17 | -3.74 | 0.90 | 6.10 |
+| V12 | -4.68 | -0.30 | 4.08 |
+| V16 | -2.76 | 0.42 | 3.81 |
+| V10 | -4.07 | -0.24 | 3.73 |
+
+- The missed frauds look close to normal on the features the model relies on most. V14 and V12 also lead the SHAP ranking, so the model's strongest signals are quiet on these frauds.
+- Amount does not clearly separate the groups. The medians are close (6.74 caught, 8.00 missed). The mean is higher for missed frauds (215.57 vs 129.76), but a few large amounts can drive that with only 33 rows.
+- This is partly circular. A fraud counts as missed because the model scored it low, and the model scores low when these features are unremarkable. It shows why they are missed, not that a better model could find them.
+- I did not test whether the differences are statistically solid, and I did not check whether the missed frauds form one group or several kinds. The lowest-scored examples are mixed: some have a high V4, others look ordinary everywhere I looked.
+- The cutoff (0.11) was chosen on validation, so the validation misses are not fully unseen for that choice.
+- V1 to V28 are anonymized, so I cannot say what these fraud types are in real life.
+
 ## Next
 
 Load testing, a fresh-window evaluation of the retrained candidate.
