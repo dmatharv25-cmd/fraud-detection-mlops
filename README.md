@@ -1,4 +1,4 @@
-# Fraud Detection MLOps
+﻿# Fraud Detection MLOps
 
 [![tests](https://github.com/dmatharv25-cmd/fraud-detection-mlops/actions/workflows/tests.yml/badge.svg)](https://github.com/dmatharv25-cmd/fraud-detection-mlops/actions/workflows/tests.yml)
 
@@ -164,6 +164,26 @@ The same benchmark (200 test-set transactions, one request at a time) was run ag
 - The model is copied in from the local `models/` folder at build time, so the image only works with that exact model. A real system would load it from a registry or storage at startup.
 - The image also contains `candidate.pkl`, which the API never loads.
 - Latency is one request at a time on one laptop. This is not a load test.
+
+## Rolling-window evaluation
+
+The single test split has only 75 frauds, so I also ran a rolling evaluation (`python -W ignore -m src.rolling_eval`). The data is cut into 6-hour blocks. For each block from hour 24 onward, both models are trained on all earlier blocks and scored on that block. Blocks with fewer than 5 frauds would be skipped (none were).
+
+| Test block (hours) | Train frauds | Test frauds | LogReg PR-AUC | LightGBM PR-AUC |
+|---|---|---|---|---|
+| 24-30 | 281 | 69 | 0.8836 | 0.8884 |
+| 30-36 | 350 | 27 | 0.7332 | 0.7005 |
+| 36-42 | 377 | 63 | 0.8089 | 0.8418 |
+| 42-48 | 440 | 52 | 0.7248 | 0.7520 |
+| Mean | | | 0.7876 | 0.7957 |
+
+- LightGBM was higher in 3 of 4 blocks. Its mean lead is about 0.008, much smaller than the 0.067 lead on the single test split (0.811 vs 0.744).
+- The one block LightGBM lost (30-36) has the fewest test frauds (27), so it is the noisiest. The 24-30 block is close to a tie.
+- Scores for both models swing from about 0.70 to 0.89 depending on the block. That spread is larger than the gap between the models, so a single test window can make either model look much better or worse.
+- I did not compute an interval for the 0.008 gap. With 4 blocks, and later training sets containing earlier blocks (so the blocks are not independent), the data cannot clearly separate the models.
+- LightGBM used 600 trees here instead of the 1564 in the final model, to keep runs fast. I did not test whether 600 is a good number, so these are not exactly the final model's scores.
+- Settings were otherwise fixed from earlier and nothing was tuned per block.
+- The data covers only about 48 hours, so block differences may also reflect time-of-day effects.
 
 ## Next
 
