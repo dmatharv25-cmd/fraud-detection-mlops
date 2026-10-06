@@ -16,6 +16,20 @@ Status: core work done (baseline, LightGBM, cost thresholds, SHAP, API, Docker, 
 - **Also in this repo:** cost-based threshold, SHAP explanations, a FastAPI service with Docker, PSI and KS drift monitoring, a retraining trigger, and a calibration check.
 - **Scope:** the data covers only about 48 hours, so nothing here is evidence of long-term drift. Costs are assumptions, not real bank data.
 
+## Run it yourself
+
+1. Get the data. Download the "Credit Card Fraud Detection" dataset (ULB Machine Learning Group, on Kaggle) and save the file as `data/creditcard.csv`. The `data/` folder is not in Git.
+2. Create a virtual environment and install packages, one line at a time: `python -m venv .venv`, then `.venv\Scripts\activate`, then `pip install -r requirements.txt`.
+3. Run the tests: `python -m pytest -q`
+4. Run the analyses from the repo root, one at a time:
+   - `python -W ignore -m src.final_eval`
+   - `python -W ignore -m src.rolling_eval`
+   - `python -W ignore -m src.calibration`
+   - `python -W ignore -m src.missed_frauds`
+
+- `requirements.txt` is a full `pip freeze` from a Windows machine. It pins every version, but it includes Windows-only packages (`pywin32`, `pywinpty`), so installing it on Linux or macOS will fail until those lines are removed. `requirements-api.txt` and `requirements-ci.txt` are smaller sets for the API container and CI.
+- I have not tested a fresh clone on another machine.
+
 ## Setup
 
 - Train: first 60% of time (360 frauds)
