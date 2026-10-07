@@ -281,3 +281,17 @@ Features where missed and caught frauds differ most (difference in means, in uni
 - A fresh-window evaluation of the retrained candidate is blocked. The data covers only about 48 hours and no unseen later period is left, so it needs new data.
 - The missed-fraud differences have no significance test, and I did not check whether the missed frauds form one group or several.
 - The load test shows throughput levelling off, but I did not find the cause or test the Docker container under load.
+
+## Live demo
+
+The model is deployed as a FastAPI service on Render (free tier):
+
+- Service: https://fraud-detection-mlops-1l61.onrender.com
+- Health check: https://fraud-detection-mlops-1l61.onrender.com/health
+- Interactive docs (try `POST /predict`): https://fraud-detection-mlops-1l61.onrender.com/docs
+
+**Cold start:** the free service sleeps after inactivity, so the first request can take up to a minute while it wakes up.
+
+**Smoke test on the live service:** 10 test-set transactions (5 fraud, 5 normal) were sent to `/predict`. All returned HTTP 200. The 5 frauds scored 0.9989 to 1.0 and were flagged; the 5 normal transactions scored 0.0 and were not flagged. This confirms the deployed model loads and applies the 0.11 threshold. It is not an accuracy estimate: see the evaluation section for recall and precision, including the roughly one quarter of frauds missed at this threshold.
+
+**Performance note:** the load-test and latency numbers in this README were measured on a local laptop. The Render free tier has a fraction of a CPU and 512 MB of RAM, so latency there will be higher.
