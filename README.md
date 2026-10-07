@@ -286,6 +286,7 @@ Features where missed and caught frauds differ most (difference in means, in uni
 
 The model is deployed as a FastAPI service on Render (free tier):
 
+- Demo page (pick a real test transaction and score it): https://fraud-detection-mlops-1l61.onrender.com
 - Health check: https://fraud-detection-mlops-1l61.onrender.com/health
 - Interactive docs (try `POST /predict`): https://fraud-detection-mlops-1l61.onrender.com/docs
 
