@@ -295,3 +295,19 @@ The model is deployed as a FastAPI service on Render (free tier):
 **Smoke test on the live service:** 10 test-set transactions (5 fraud, 5 normal) were sent to `/predict`. All returned HTTP 200. The 5 frauds scored 0.9989 to 1.0 and were flagged; the 5 normal transactions scored 0.0 and were not flagged. This confirms the deployed model loads and applies the 0.11 threshold. It is not an accuracy estimate: see the evaluation section for recall and precision, including the roughly one quarter of frauds missed at this threshold.
 
 **Performance note:** the load-test and latency numbers in this README were measured on a local laptop. The Render free tier has a fraction of a CPU and 512 MB of RAM, so latency there will be higher.
+
+## Example request
+
+Score one transaction from the command line:
+
+```bash
+curl -X POST https://fraud-detection-mlops-1l61.onrender.com/predict \
+  -H 'Content-Type: application/json' \
+  -d '{"V1": 1.914, "V2": -0.4901, "V3": -0.3261, "V4": 0.6047, "V5": -0.8501, "V6": -0.7363, "V7": -0.5241, "V8": -0.0886, "V9": 1.0911, "V10": 0.0935, "V11": -0.8923, "V12": 0.0272, "V13": -0.2438, "V14": 0.0318, "V15": 0.9006, "V16": 0.536, "V17": -0.6484, "V18": 0.1831, "V19": -0.4863, "V20": -0.1396, "V21": 0.211, "V22": 0.6393, "V23": 0.1475, "V24": 0.0737, "V25": -0.3184, "V26": 0.3506, "V27": -0.0238, "V28": -0.0371, "Amount": 50.0}'
+```
+
+Response:
+
+```json
+{"fraud_score": 1.4186072232836704e-09, "flagged": false, "threshold": 0.11, "latency_ms": 51.69}
+```
