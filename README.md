@@ -1,4 +1,4 @@
-# Fraud Detection MLOps
+﻿# Fraud Detection MLOps
 
 [![tests](https://github.com/dmatharv25-cmd/fraud-detection-mlops/actions/workflows/tests.yml/badge.svg)](https://github.com/dmatharv25-cmd/fraud-detection-mlops/actions/workflows/tests.yml)
 
@@ -309,5 +309,5 @@ curl -X POST https://fraud-detection-mlops-1l61.onrender.com/predict \
 Response:
 
 ```json
-{"fraud_score": 1.4186072232836704e-09, "flagged": false, "threshold": 0.11, "latency_ms": 51.69}
+{"fraud_score": 0.0000, "flagged": false, "threshold": 0.11, "latency_ms": 51.69}
 ```
