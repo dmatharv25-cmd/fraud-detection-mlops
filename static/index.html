@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fraud Detection Demo</title>
+<style>
+:root{--bg:#f7f7f5;--fg:#1c1c1a;--muted:#6b6b66;--card:#fff;--line:#deded8;--ok:#1a7f4b;--bad:#c0392b;--accent:#2455d6}
+@media (prefers-color-scheme:dark){:root{--bg:#161614;--fg:#ecece8;--muted:#9a9a93;--card:#1f1f1c;--line:#34342f;--ok:#4cc38a;--bad:#ff7a6b;--accent:#7aa2ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:32px 20px 60px}
+h1{font-size:26px;margin:0 0 6px}
+p.lead{color:var(--muted);margin:0 0 24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 12px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:8px 12px;border-radius:8px}
+button:hover{border-color:var(--accent)}
+button.sel{border-color:var(--accent);outline:2px solid var(--accent)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent);margin-top:12px}
+button:disabled{opacity:.6;cursor:wait}
+textarea{width:100%;height:140px;font:12px/1.4 ui-monospace,Consolas,monospace;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px}
+.verdict{font-size:22px;font-weight:700}
+.flag{color:var(--bad)}
+.pass{color:var(--ok)}
+.meter{height:10px;background:var(--line);border-radius:5px;position:relative;margin:16px 0 6px}
+.fill{height:100%;border-radius:5px;background:var(--accent)}
+.marker{position:absolute;top:-4px;width:2px;height:18px;background:var(--fg)}
+.small{color:var(--muted);font-size:13px}
+.row{display:flex;gap:24px;flex-wrap:wrap;margin-top:10px}
+.row div span{display:block;color:var(--muted);font-size:12px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<h1>Credit card fraud detection</h1>
+<p class="lead">A LightGBM model behind a FastAPI service. Pick a real transaction from the held-out test set and see how the model scores it.</p>
+
+<div class="card">
+<h2>1. Choose a transaction</h2>
+<div class="btns" id="btns"></div>
+<p class="small">These are real rows from the test split. Fraud example 4 is one the model misses.</p>
+</div>
+
+<div class="card">
+<h2>2. Transaction data (editable)</h2>
+<textarea id="json" spellcheck="false" placeholder="Choose a transaction above, or paste your own JSON with V1 to V28 and Amount."></textarea>
+<button class="primary" id="go">Score it</button>
+<p class="small" id="status"></p>
+</div>
+
+<div class="card" id="result" hidden>
+<h2>3. Result</h2>
+<div class="verdict" id="verdict"></div>
+<div class="meter"><div class="fill" id="fill"></div><div class="marker" id="marker"></div></div>
+<div class="small">The bar shows the fraud score from 0 to 1. The vertical line is the alert threshold.</div>
+<div class="row">
+<div><span>Fraud score</span><b id="score"></b></div>
+<div><span>Threshold</span><b id="thr"></b></div>
+<div><span>Scoring time in server</span><b id="lat"></b></div>
+</div>
+<p id="note" style="margin-bottom:0"></p>
+</div>
+
+<p class="small">The threshold (0.11) comes from assumed costs, not real bank data, and the training data covers only about 48 hours. About a quarter of frauds are missed at this threshold. This demo is not an accuracy estimate. The free server sleeps when idle, so the first request can take up to a minute. <a href="/docs">API docs</a> &middot; <a href="https://github.com/dmatharv25-cmd/fraud-detection-mlops">Source code</a></p>
+</main>
+<script>
+const SAMPLES = [{"name": "Fraud example 1", "actual": 1, "row": {"V1": -6.6182, "V2": 3.8359, "V3": -6.3165, "V4": 1.8441, "V5": -2.4769, "V6": -1.8867, "V7": -3.8175, "V8": 0.6135, "V9": -1.4821, "V10": -4.8687, "V11": 3.3597, "V12": -5.9692, "V13": 0.0512, "V14": -8.7245, "V15": 0.7764, "V16": -3.9394, "V17": -7.1644, "V18": -2.4347, "V19": 0.2352, "V20": -0.9538, "V21": 1.6366, "V22": 0.0387, "V23": 0.2782, "V24": 0.7867, "V25": 0.0639, "V26": 0.1547, "V27": -2.0424, "V28": 1.4051, "Amount": 57.73}}, {"name": "Fraud example 2", "actual": 1, "row": {"V1": -3.5764, "V2": 3.2994, "V3": -7.4604, "V4": 7.7836, "V5": -0.3985, "V6": -1.9684, "V7": -3.1105, "V8": -0.3284, "V9": -1.5744, "V10": -2.4976, "V11": 4.6042, "V12": -9.0019, "V13": -1.2763, "V14": -13.9695, "V15": 1.2569, "V16": -4.4916, "V17": -5.97, "V18": -1.2747, "V19": 1.1478, "V20": -0.1815, "V21": 0.5407, "V22": 0.7195, "V23": 0.3792, "V24": -0.617, "V25": -0.4428, "V26": 0.3598, "V27": -2.6518, "V28": 0.4222, "Amount": 1.0}}, {"name": "Fraud example 3", "actual": 1, "row": {"V1": -4.6732, "V2": 4.196, "V3": -8.3924, "V4": 7.7432, "V5": -1.1388, "V6": -2.0949, "V7": -3.8395, "V8": 0.5431, "V9": -1.5284, "V10": -2.3251, "V11": 4.3558, "V12": -8.663, "V13": -1.154, "V14": -13.4817, "V15": 1.2085, "V16": -4.288, "V17": -5.6518, "V18": -1.2359, "V19": 1.0801, "V20": -0.1803, "V21": 0.5542, "V22": 0.6561, "V23": 0.4824, "V24": -0.6244, "V25": -0.2963, "V26": 0.3748, "V27": -2.6785, "V28": 0.4124, "Amount": 1.0}}, {"name": "Fraud example 4", "actual": 1, "row": {"V1": 2.0919, "V2": -0.7575, "V3": -1.1923, "V4": -0.7555, "V5": -0.6203, "V6": -0.3221, "V7": -1.0825, "V8": 0.1172, "V9": -0.1409, "V10": 0.2493, "V11": 1.3383, "V12": -0.3298, "V13": -0.3636, "V14": -1.8248, "V15": -0.2297, "V16": 1.8423, "V17": 1.1942, "V18": 0.0375, "V19": 0.4231, "V20": 0.0374, "V21": 0.2883, "V22": 0.8319, "V23": 0.142, "V24": 0.5926, "V25": -0.1961, "V26": -0.1367, "V27": 0.0202, "V28": -0.0155, "Amount": 19.95}}, {"name": "Normal example 1", "actual": 0, "row": {"V1": -0.5154, "V2": 1.052, "V3": -1.0942, "V4": -1.1874, "V5": 1.1122, "V6": -1.2865, "V7": 1.3234, "V8": -0.0753, "V9": -0.4009, "V10": -0.1727, "V11": 0.2933, "V12": -0.0894, "V13": -1.481, "V14": 1.2155, "V15": -0.67, "V16": -0.3461, "V17": -0.5888, "V18": 0.2841, "V19": 0.2282, "V20": -0.2173, "V21": 0.2666, "V22": 0.9299, "V23": -0.1463, "V24": -0.3779, "V25": -0.3367, "V26": 0.0644, "V27": -0.0213, "V28": -0.0491, "Amount": 1.46}}, {"name": "Normal example 2", "actual": 0, "row": {"V1": -0.0478, "V2": -0.6865, "V3": 1.8787, "V4": -2.3693, "V5": -1.2734, "V6": 0.3083, "V7": -0.9369, "V8": 0.2093, "V9": -1.8575, "V10": 0.933, "V11": 0.2236, "V12": -0.2273, "V13": 1.0532, "V14": -0.9153, "V15": -0.7937, "V16": -0.0706, "V17": 0.0363, "V18": 1.0304, "V19": 0.485, "V20": -0.1958, "V21": -0.0149, "V22": 0.4463, "V23": -0.0486, "V24": -0.3448, "V25": -0.683, "V26": -0.2053, "V27": 0.2231, "V28": 0.1683, "Amount": 22.5}}, {"name": "Normal example 3", "actual": 0, "row": {"V1": -0.1003, "V2": 0.8289, "V3": 0.1395, "V4": -0.988, "V5": 0.8232, "V6": -1.4096, "V7": 1.2512, "V8": -0.3723, "V9": -0.1602, "V10": -0.8441, "V11": -0.9403, "V12": 0.2589, "V13": 0.4348, "V14": 0.2818, "V15": -0.1871, "V16": -0.0614, "V17": -0.8744, "V18": -0.0273, "V19": -0.9682, "V20": -0.2305, "V21": 0.4023, "V22": 1.2538, "V23": -0.2255, "V24": 0.0915, "V25": -0.454, "V26": -0.3654, "V27": 0.2042, "V28": 0.2254, "Amount": 1.79}}];
+const $ = id => document.getElementById(id);
+const box = $('json'), btns = $('btns');
+let current = null;
+
+SAMPLES.forEach((s, i) => {
+  const b = document.createElement('button');
+  b.textContent = s.name;
+  b.onclick = () => pick(i);
+  btns.appendChild(b);
+});
+
+function clearSel() {
+  Array.from(btns.children).forEach(b => b.classList.remove('sel'));
+}
+
+function pick(i) {
+  current = i;
+  box.value = JSON.stringify(SAMPLES[i].row);
+  clearSel();
+  btns.children[i].classList.add('sel');
+  $('result').hidden = true;
+  $('status').textContent = '';
+}
+
+box.addEventListener('input', () => { current = null; clearSel(); });
+
+function render(d) {
+  const v = $('verdict');
+  v.textContent = d.flagged ? 'Flagged as fraud' : 'Not flagged';
+  v.className = 'verdict ' + (d.flagged ? 'flag' : 'pass');
+  const s = d.fraud_score;
+  $('score').textContent = (s > 0 && s < 0.0001) ? s.toExponential(2) : s.toFixed(4);
+  $('thr').textContent = d.threshold;
+  $('lat').textContent = d.latency_ms + ' ms';
+  $('fill').style.width = Math.max(1, s * 100) + '%';
+  $('marker').style.left = (d.threshold * 100) + '%';
+  let note = '';
+  if (current !== null) {
+    const actual = SAMPLES[current].actual === 1 ? 'fraud' : 'a normal transaction';
+    const right = d.flagged === (SAMPLES[current].actual === 1);
+    note = 'In the test data this was ' + actual + '. ' + (right ? 'The model got it right.' : 'The model got this one wrong.');
+  }
+  $('note').textContent = note;
+  $('result').hidden = false;
+}
+
+async function score() {
+  let row;
+  try { row = JSON.parse(box.value); } catch (e) { $('status').textContent = 'That is not valid JSON. Pick a transaction above or fix the text.'; return; }
+  $('status').textContent = 'Scoring... if the service was asleep, this can take up to a minute.';
+  $('go').disabled = true;
+  try {
+    const r = await fetch('/predict', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(row) });
+    if (!r.ok) throw new Error('server returned ' + r.status);
+    render(await r.json());
+    $('status').textContent = '';
+  } catch (e) {
+    $('status').textContent = 'Request failed: ' + e.message;
+  }
+  $('go').disabled = false;
+}
+$('go').onclick = score;
+</script>
+</body>
+</html>

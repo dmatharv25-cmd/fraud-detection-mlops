@@ -5,10 +5,11 @@ from pathlib import Path
 import joblib
 import pandas as pd
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, create_model
 
 MODELS = Path(__file__).resolve().parent.parent / "models"
+STATIC = Path(__file__).resolve().parent.parent / "static"
 
 model = joblib.load(MODELS / "lgbm.pkl")
 meta = json.loads((MODELS / "meta.json").read_text())
@@ -31,7 +32,7 @@ app = FastAPI(title="Fraud Detection API")
 
 @app.get("/", include_in_schema=False)
 def root():
-    return RedirectResponse(url="/docs")
+    return FileResponse(STATIC / "index.html")
 
 
 @app.get("/health")
