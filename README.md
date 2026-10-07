@@ -1,4 +1,4 @@
-﻿# Fraud Detection MLOps
+# Fraud Detection MLOps
 
 [![tests](https://github.com/dmatharv25-cmd/fraud-detection-mlops/actions/workflows/tests.yml/badge.svg)](https://github.com/dmatharv25-cmd/fraud-detection-mlops/actions/workflows/tests.yml)
 
